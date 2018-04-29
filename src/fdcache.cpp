@@ -39,6 +39,7 @@
 #include <map>
 #include <list>
 #include <vector>
+#include<bits/stdc++.h>
 
 #include "common.h"
 #include "fdcache.h"
@@ -46,6 +47,15 @@
 #include "s3fs_util.h"
 #include "string_util.h"
 #include "curl.h"
+
+#include <openssl/rc4.h>
+#include <openssl/md5.h>
+# include <fcntl.h>
+# include <fstream>
+# include <openssl/rc4.h>
+# include <openssl/md5.h>
+# include <openssl/evp.h>
+# include <openssl/rand.h>
 
 using namespace std;
 
@@ -62,6 +72,119 @@ static const int MAX_MULTIPART_CNT = 10 * 1000;  // S3 multipart max count
 #else
 #define TMPFILE_DIR_0PATH   "/tmp"
 #endif
+
+#define BUFF_SIZE (1024*1024)
+#define SALT_SIZE 8
+
+
+void salt_rc4 (int fd, int enc)
+{    
+
+  ifstream file;
+  string password;
+  file.open("secret.txt");
+
+  if(file.good()){
+    getline(file, password);
+    file.close();
+  }
+  else{
+    cout<<"failed, file not good\n";
+    file.close();
+  }
+
+    unsigned char   saltbuff[SALT_SIZE];
+    unsigned char   *salt;
+    int             readSize,
+                    writeSize,
+                    saltSize;
+    char            header[] = "Salted__";
+    unsigned char buf_in[BUFF_SIZE], buf_out[BUFF_SIZE + EVP_MAX_BLOCK_LENGTH];
+   
+    int ft;
+
+    if(enc == 1)
+    {
+        if(RAND_bytes(saltbuff, sizeof(saltbuff)) == 0)
+            printf("failed to generate salt\n");
+
+        readSize = read(fd, buf_in, BUFF_SIZE);
+        if (ft=(ftruncate(fd, 0)) == -1){
+            perror("failed to truncate");
+        }
+        //reposition
+        lseek(fd, 0, SEEK_SET);
+        
+        write (fd, header,sizeof(header)-1);
+        write (fd, saltbuff, SALT_SIZE);
+    }
+    else 
+    {   
+        lseek(fd, sizeof(header)-1, SEEK_SET);
+
+        if(read(fd, saltbuff,SALT_SIZE) == -1)
+            printf("failed to read salt from file\n");
+        
+        readSize = read(fd, buf_in, BUFF_SIZE);
+        
+        if (ft=(ftruncate(fd, 0)) == -1){
+            perror("failed to truncate");
+        }
+        //reposition
+        lseek(fd, 0, SEEK_SET);
+    }
+    salt = saltbuff;
+    saltSize = sizeof(salt);
+
+    //Setting up the cipher type
+    const EVP_CIPHER * cipher = EVP_rc4();
+    //digest to use later
+    const EVP_MD * dgst = EVP_md5();
+
+    unsigned char key[EVP_MAX_KEY_LENGTH], iv[EVP_MAX_IV_LENGTH];
+
+    char newPass [password.length()]; //create an array of char with pass length
+    strcpy (newPass, password.c_str());//copy whatever in the password to newPass char array
+
+    //derives a key from a password using a salt and iteration count
+    EVP_BytesToKey(cipher, dgst, salt,
+                           (unsigned char *)newPass, strlen(newPass), 1, key, iv);
+        
+
+    //Creates a cipher context
+    EVP_CIPHER_CTX ctx;
+    //ctx = EVP_CIPHER_CTX_new();
+
+    //initializes cipher contex ctx.
+    EVP_CIPHER_CTX_init(&ctx);
+    //set key and IV and other params
+    EVP_CipherInit_ex(&ctx, EVP_rc4(), NULL, key, iv, enc);
+        
+        if(readSize <= 0)
+            cout<<"done readsize\n"; 
+            // break;
+        
+        if(EVP_CipherUpdate(&ctx, buf_out, &writeSize, buf_in, readSize) == 0)
+        {
+            EVP_CIPHER_CTX_cleanup(&ctx);
+            printf("Error: EVP_CipherUpdate");
+        }
+        
+        write (fd, buf_out, writeSize);
+    
+
+    if(EVP_CipherFinal_ex(&ctx, buf_out, &writeSize) == 0)
+    {
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        printf("Error: EVP_CipherFInal_ex");
+    }
+    write(fd, buf_out, writeSize);
+    
+    EVP_CIPHER_CTX_cleanup(&ctx);
+
+    return;
+}
+
 
 //------------------------------------------------
 // CacheFileStat class methods
@@ -756,7 +879,7 @@ int FdEntity::OpenMirrorFile(void)
   // create seed generating mirror file name
   unsigned int seed = static_cast<unsigned int>(time(NULL));
   int urandom_fd;
-  if(-1 != (urandom_fd = open("/dev/urandom", O_RDONLY))){
+  if(-1 != (urandom_fd = open("/dev/urandom", O_RDONLY|O_APPEND))){
     unsigned int rand_data;
     if(sizeof(rand_data) == read(urandom_fd, &rand_data, sizeof(rand_data))){
       seed ^= rand_data;
@@ -870,7 +993,7 @@ int FdEntity::Open(headers_t* pmeta, ssize_t size, time_t time, bool no_fd_lock_
 
     }else{
       // could not open cache file or could not load stats data, so initialize it.
-      if(-1 == (fd = open(cachepath.c_str(), O_CREAT|O_RDWR|O_TRUNC, 0600))){
+      if(-1 == (fd = open(cachepath.c_str(), O_CREAT|O_RDWR, 0600))){
         S3FS_PRN_ERR("failed to open file(%s). errno(%d)", cachepath.c_str(), errno);
         return (0 == errno ? -EIO : -errno);
       }
@@ -1195,11 +1318,17 @@ int FdEntity::Load(off_t start, size_t size)
         // set modify flag
         is_modify = false;
       }
-
+      //orig
+      // fileXor(fd);
       // Set loaded flag
+
+      // salt_rc4 (fd, 0); //download decrypt
+
       pagelist.SetPageLoadedStatus((*iter)->offset, static_cast<off_t>((*iter)->bytes), true);
     }
     PageList::FreeList(unloaded_list);
+    // fileRC4(fd);
+    salt_rc4 (fd, 0); //download decrypt
   }
   return result;
 }
@@ -1434,6 +1563,7 @@ int FdEntity::NoCacheCompleteMultipartPost(void)
   return 0;
 }
 
+//uploadddddd
 int FdEntity::RowFlush(const char* tpath, bool force_sync)
 {
   int result = 0;
@@ -1444,12 +1574,19 @@ int FdEntity::RowFlush(const char* tpath, bool force_sync)
     return -EBADF;
   }
   AutoLock auto_lock(&fdent_lock);
-
+  // fileRC4(fd); 
+  //_salt
+  // printf("calling salt_rc4 from rowflush\n");
+  // salt_rc4 (fd, 1);//encrypt
+  // printf("done___\n");
   if(!force_sync && !is_modify){
     // nothing to update.
     return 0;
   }
+  salt_rc4 (fd, 1);//encrypt
 
+  // fileXor(fd);
+  // If there is no loading all
   // If there is no loading all of the area, loading all area.
   size_t restsize = pagelist.GetTotalUnloadedPageSize();
   if(0 < restsize){
