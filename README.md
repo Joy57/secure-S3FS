@@ -23,7 +23,7 @@ Enter S3 identity and credential in a file ~/.passwd-s3fs
     echo ACCESS_KEY:SECRET_KEY > ~/.passwd-s3fs
     chmod 600 ~/.passwd-s3fs
 ```
-Get the secure-S3FS from my github repository and configure it
+Clone the secure-S3FS and configure it
 --------------------------------------------------------------
 ```
     git clone https://github.com/Joy57/secure-S3FS.git
