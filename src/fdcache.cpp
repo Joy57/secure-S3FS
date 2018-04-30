@@ -48,8 +48,7 @@
 #include "string_util.h"
 #include "curl.h"
 
-#include <openssl/rc4.h>
-#include <openssl/md5.h>
+
 # include <fcntl.h>
 # include <fstream>
 # include <openssl/rc4.h>
