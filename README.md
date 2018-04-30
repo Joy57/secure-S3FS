@@ -5,7 +5,6 @@ A secure Amazon S3 Based File System
 
 | Software    | Version     |
 | ----------- | ----------- |
-| `s3fs-fuse` | `1.83`      |
 | `openssl`   | [`1.0.2o`](https://www.openssl.org/source/)|
 
 Setup for Secure-S3FS
