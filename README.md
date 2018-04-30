@@ -4,11 +4,11 @@ A secure Amazon S3 Based File System
 
 Setup for Secure-S3FS
 ----------------------
-•	Create an AWS Account if you don’t already have one refer to AWS Documentation 
+*	Create an AWS Account if you don’t already have one refer to AWS Documentation 
 	https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/
-•	Navigate to S3 bucket from AWS console
-•	Create a bucket (remember bucket name has to be unique)
-•	Acquire your credentials from AWS account (IAM)
+*	Navigate to S3 bucket from AWS console
+*	Create a bucket (remember bucket name has to be unique)
+*	Acquire your credentials from AWS account (IAM)
 
 Enter S3 identity and credential in a file ~/.passwd-s3fs 
 ---------------------------------------------------------
