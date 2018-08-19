@@ -40,7 +40,9 @@ Clone the secure-S3FS and configure it
 
 Troubleshoot for Mac
 --------------------------------------------------------------
-If you get these error: `./configure: line 4965: syntax error near unexpected token common_lib_checking,
+If you get the error: 
+
+`./configure: line 4965: syntax error near unexpected token common_lib_checking,
 ./configure: line 4965: PKG_CHECK_MODULES(common_lib_checking, fuse >= ${min_fuse_version} libcurl >= 7.0 libxml-2.0 >= 2.6 )'`
 
 Make sure the following packages are installed.
