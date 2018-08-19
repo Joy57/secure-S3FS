@@ -51,7 +51,14 @@ Make sure the following packages are installed.
     brew install pkg-config
     brew install libssl-dev
 ```
+and then run
 
+```
+    ./autogen.sh
+    ./configure
+    make
+    sudo make install
+```
 
 
 Run with the bucket you created earlier
