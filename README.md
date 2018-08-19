@@ -8,6 +8,8 @@ Prerequisites
 | Software    | Version     |
 | ----------- | ----------- |
 | `openssl`   | [`1.0.2o`](https://www.openssl.org/source/)|
+|`automake`|`latest`|
+|`pkg-config`|`latest`|
 
 Setup for Secure-S3FS
 ----------------------
@@ -23,6 +25,8 @@ Enter S3 identity and credential in a file ~/.passwd-s3fs
     echo ACCESS_KEY:SECRET_KEY > ~/.passwd-s3fs
     chmod 600 ~/.passwd-s3fs
 ```
+
+
 Clone the secure-S3FS and configure it
 --------------------------------------------------------------
 ```
@@ -33,6 +37,21 @@ Clone the secure-S3FS and configure it
     make
     sudo make install
 ```
+
+Troubleshoot for Mac
+--------------------------------------------------------------
+If you get these error: `./configure: line 4965: syntax error near unexpected token common_lib_checking,
+./configure: line 4965: PKG_CHECK_MODULES(common_lib_checking, fuse >= ${min_fuse_version} libcurl >= 7.0 libxml-2.0 >= 2.6 )'`
+
+Make sure the following packages are installed.
+```
+    brew install automake
+    brew install pkg-config
+    brew install libssl-dev
+```
+
+
+
 Run with the bucket you created earlier
 ----------------------------------------
 ```
